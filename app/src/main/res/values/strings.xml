@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">Rating</string>
+
+    <string name="hello_world">Hello world!</string>
+    <string name="action_settings">Settings</string>
+    <!-- Sign-in status messages -->
+    <string name="signed_in_fmt">Signed in as: %s</string>
+    <string name="signing_in">Signing in…</string>
+    <string name="signed_out">Signed out</string>
+
+    <!-- Google Play Services error for Toast -->
+    <string name="play_services_error_fmt">Google Play Services Error: %i</string>
+</resources>
