@@ -2,9 +2,11 @@ package com.example.rating;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentSender;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
@@ -28,14 +30,18 @@ public class MainActivity extends Activity implements
         View.OnClickListener {
     private static final String TAG = "MainActivity";
     /* Request code used to invoke sign in user interactions. */
-    private static final int RC_SIGN_IN = 0;
+    private static final int RC_SIGN_IN = 9001;
    private ProgressDialog progressBar;
-
+    private boolean progbar = false;
+    private boolean loggedin;
+    SharedPreferences shared;
     /* Client used to interact with Google APIs. */
     private GoogleApiClient mGoogleApiClient;
     /* Is there a ConnectionResult resolution in progress? */
     private boolean mIsResolving = false;
-
+    /* Keys for persisting instance variables in savedInstanceState */
+    private static final String KEY_IS_RESOLVING = "is_resolving";
+    private static final String KEY_SHOULD_RESOLVE = "should_resolve";
     /* Should we automatically resolve ConnectionResults when possible? */
     private boolean mShouldResolve = false;
     private TextView mStatus;
@@ -45,6 +51,11 @@ public class MainActivity extends Activity implements
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        if (savedInstanceState != null) {
+            mIsResolving = savedInstanceState.getBoolean(KEY_IS_RESOLVING);
+            mShouldResolve = savedInstanceState.getBoolean(KEY_SHOULD_RESOLVE);
+        }
+
         findViewById(R.id.button).setOnClickListener(this);
         db = new DatabaseHelper(getApplicationContext());
 
@@ -71,10 +82,13 @@ public class MainActivity extends Activity implements
 
                 Intent intent = new Intent(this, Products.class);
                 Bundle bundle = new Bundle();
-                bundle.putString("userid",String.valueOf(userid));
+                bundle.putString("userid", String.valueOf(userid));
                 intent.putExtras(bundle);
                 startActivity(intent);
-                progressBar.dismiss();
+                if(progbar){
+                    progressBar.dismiss();
+                }
+
             }
             else{
                 Users user=new Users(email);
@@ -82,10 +96,13 @@ public class MainActivity extends Activity implements
                 int userid=db.getuserid(email);
                 Intent intent = new Intent(this, Products.class);
                 Bundle bundle = new Bundle();
-                bundle.putString("userid",String.valueOf(userid));
+                bundle.putString("userid", String.valueOf(userid));
                 intent.putExtras(bundle);
                 startActivity(intent);
-                progressBar.dismiss();
+                if(progbar){
+                    progressBar.dismiss();
+                }
+
             }
 
         } else {
@@ -97,6 +114,12 @@ public class MainActivity extends Activity implements
             findViewById(R.id.button).setVisibility(View.VISIBLE);
            // findViewById(R.id.sign_out_and_disconnect).setVisibility(View.GONE);
         }
+    }
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putBoolean(KEY_IS_RESOLVING, mIsResolving);
+        outState.putBoolean(KEY_SHOULD_RESOLVE, mShouldResolve);
     }
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -139,10 +162,21 @@ public class MainActivity extends Activity implements
         // onConnected indicates that an account was selected on the device, that the selected
         // account has granted any requested permissions to our app and that we were able to
         // establish a service connection to Google Play services.
-        Log.d(TAG, "onConnected:" + bundle);
-
+        shared = getSharedPreferences("loggedstatus", MODE_PRIVATE);
+        loggedin = Boolean.parseBoolean(shared.getString("loggedin", ""));
+        if(loggedin){
+            if (mGoogleApiClient.isConnected()) {
+                Plus.AccountApi.clearDefaultAccount(mGoogleApiClient);
+                Plus.AccountApi.revokeAccessAndDisconnect(mGoogleApiClient);
+                mGoogleApiClient.disconnect();
+            }
+            updateUI(false);
+        }
+else{
+            updateUI(true);
+        }
         // Show the signed-in UI
-        updateUI(true);
+
     }
 
     @Override
@@ -156,7 +190,7 @@ public class MainActivity extends Activity implements
             case R.id.button:
                 // User clicked the sign-in button, so begin the sign-in process and automatically
                 // attempt to resolve any errors that occur.
-               // mStatus.setText(R.string.signing_in);
+                // mStatus.setText(R.string.signing_in);
                 // [START sign_in_clicked]
                 progressBar = new ProgressDialog(v.getContext());
                 progressBar.setCancelable(true);
@@ -167,6 +201,12 @@ public class MainActivity extends Activity implements
                 progressBar.show();
                 mShouldResolve = true;
                 mGoogleApiClient.connect();
+                progbar=true;
+
+                shared=getSharedPreferences("loggedstatus", Context.MODE_PRIVATE);
+                SharedPreferences.Editor editor = shared.edit();
+                editor.putString("loggedin", "false");
+                editor.commit();
                 // [END sign_in_clicked]
                 break;
 
@@ -227,6 +267,8 @@ public class MainActivity extends Activity implements
     @Override
     protected void onStart() {
         super.onStart();
+        progbar=false;
+        mGoogleApiClient.connect();
 
     }
 

@@ -1,7 +1,9 @@
 package com.example.rating;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
@@ -12,6 +14,7 @@ import android.widget.TextView;
  */
 public class Results extends Activity implements View.OnClickListener{
     int id=0;
+    SharedPreferences shared;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -36,14 +39,29 @@ public class Results extends Activity implements View.OnClickListener{
         p4y.setText(bundle.getString("p4yearavg"));
         id=Integer.parseInt(bundle.getString("userid"));
         products.setOnClickListener(this);
+        Button logout=(Button)findViewById(R.id.logout2);
+       logout.setOnClickListener(this);
     }
 
     @Override
     public void onClick(View v) {
-        Intent i =new Intent(this,Products.class);
-        Bundle bundle1=new Bundle();
-        bundle1.putString("userid",String.valueOf(id));
-        i.putExtras(bundle1);
-        startActivity(i);
+        switch (v.getId()){
+            case R.id.products:
+                Intent i =new Intent(this,Products.class);
+                Bundle bundle1=new Bundle();
+                bundle1.putString("userid", String.valueOf(id));
+                i.putExtras(bundle1);
+                startActivity(i);
+                break;
+            case R.id.logout2:
+                shared=getSharedPreferences("loggedstatus", Context.MODE_PRIVATE);
+                SharedPreferences.Editor editor = shared.edit();
+                editor.putString("loggedin", "true");
+                editor.commit();
+                Intent intent = new Intent(this, MainActivity.class);
+                startActivity(intent);
+                break;
+        }
+
     }
 }

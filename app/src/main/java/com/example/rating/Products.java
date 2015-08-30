@@ -1,7 +1,9 @@
 package com.example.rating;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
@@ -9,11 +11,6 @@ import android.widget.ImageButton;
 
 import com.example.rating.helper.DatabaseHelper;
 import com.example.rating.model.Productratings;
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.common.api.ResultCallback;
-import com.google.android.gms.plus.People;
-import com.google.android.gms.plus.Plus;
 
 import java.util.Calendar;
 import java.util.List;
@@ -22,23 +19,17 @@ import java.util.List;
  * Created by Gopinath on 8/24/2015.
  */
 public class Products extends Activity implements
-        GoogleApiClient.ConnectionCallbacks,
-        GoogleApiClient.OnConnectionFailedListener,
-        View.OnClickListener, ResultCallback<People.LoadPeopleResult> {
+                View.OnClickListener {
 
-    GoogleApiClient mGoogleApiClient;
-    boolean mSignInClicked;
 
+    SharedPreferences shared;
     DatabaseHelper db;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.products);
         db = new DatabaseHelper(getApplicationContext());
-        mGoogleApiClient = new GoogleApiClient.Builder(this)
-                .addConnectionCallbacks(this)
-                .addOnConnectionFailedListener(this).addApi(Plus.API)
-                .addScope(Plus.SCOPE_PLUS_LOGIN).build();
+
         Button logout=(Button)findViewById(R.id.logout);
         Button results=(Button)findViewById(R.id.button2);
         ImageButton imageButton=(ImageButton)findViewById(R.id.imageButton);
@@ -261,46 +252,24 @@ public class Products extends Activity implements
         }
     }
     private void onSignedOut(){
-
-        if (mGoogleApiClient.isConnected()) {
-            Plus.AccountApi.clearDefaultAccount(mGoogleApiClient);
-            mGoogleApiClient.disconnect();
-            mGoogleApiClient.connect();
-            // updateUI(false);
-            System.err.println("LOG OUT ^^^^^^^^^^^^^^^^^^^^ SUCESS");
-        }
-
-        Intent intent = new Intent(this, MainActivity.class);
-
+        shared=getSharedPreferences("loggedstatus", Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = shared.edit();
+        editor.putString("loggedin", "true");
+        editor.commit();
+       Intent intent = new Intent(this, MainActivity.class);
         startActivity(intent);
     }
-    @Override
-    public void onConnected(Bundle bundle) {
-        mSignInClicked = false;
-        Plus.PeopleApi.loadVisible(mGoogleApiClient, null).setResultCallback(this);
-    }
-    @Override
-    public void onConnectionSuspended(int i) {
-        mGoogleApiClient.connect();
-    }
-    @Override
-    public void onConnectionFailed(ConnectionResult connectionResult) {
 
-    }
+
 
     @Override
-    public void onResult(People.LoadPeopleResult loadPeopleResult) {
-
-    }
     protected void onStart() {
         super.onStart();
-        mGoogleApiClient.connect();
-    }
 
+    }
+    @Override
     protected void onStop() {
         super.onStop();
-        if (mGoogleApiClient.isConnected()) {
-            mGoogleApiClient.disconnect();
-        }
+
     }
 }
